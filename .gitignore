@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+grafana-data/
+prometheus-data/
+postgres-data/
+*.log

@@ -1,0 +1,26 @@
+---
+- name: Health Check All Services
+  hosts: local
+  gather_facts: no
+
+  tasks:
+    - name: Check all microservices
+      uri:
+        url: "http://localhost:{{ item.port }}/health"
+        method: GET
+        status_code: 200
+        timeout: 5
+      register: result
+      ignore_errors: yes
+      loop:
+        - { name: "auth",         port: 8001 }
+        - { name: "product",      port: 8002 }
+        - { name: "order",        port: 8003 }
+        - { name: "user",         port: 8004 }
+        - { name: "payment",      port: 8006 }
+        - { name: "notification", port: 8007 }
+
+    - name: Show results
+      debug:
+        msg: "{{ item.item.name }}: {{ 'OK' if item.status == 200 else 'FAILED' }}"
+      loop: "{{ result.results }}"

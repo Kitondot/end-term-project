@@ -1,0 +1,87 @@
+---
+- name: Setup and Deploy Microservices
+  hosts: local
+  become: no
+
+  tasks:
+    - name: Check Docker is installed
+      command: docker --version
+      register: docker_check
+      ignore_errors: yes
+
+    - name: Print Docker version
+      debug:
+        msg: "Docker: {{ docker_check.stdout }}"
+
+    - name: Check Docker Compose
+      command: docker compose version
+      register: compose_check
+      ignore_errors: yes
+
+    - name: Print Docker Compose version
+      debug:
+        msg: "Docker Compose: {{ compose_check.stdout }}"
+
+    - name: Check running containers
+      command: docker ps --format "table {{ '{{' }}.Names{{ '}}' }}\t{{ '{{' }}.Status{{ '}}' }}"
+      register: containers
+      ignore_errors: yes
+
+    - name: Print running containers
+      debug:
+        msg: "{{ containers.stdout }}"
+
+    - name: Health check all services
+      uri:
+        url: "http://localhost:{{ item.port }}/health"
+        method: GET
+        status_code: 200
+        timeout: 5
+      register: health
+      ignore_errors: yes
+      loop:
+        - { name: "auth-service",         port: 8001 }
+        - { name: "product-service",      port: 8002 }
+        - { name: "order-service",        port: 8003 }
+        - { name: "user-service",         port: 8004 }
+        - { name: "payment-service",      port: 8006 }
+        - { name: "notification-service", port: 8007 }
+
+    - name: Print health results
+      debug:
+        msg: "{{ item.item.name }}: {{ 'HEALTHY' if item.status == 200 else 'UNHEALTHY' }}"
+      loop: "{{ health.results }}"
+
+    - name: Check Prometheus
+      uri:
+        url: "http://localhost:9090/-/healthy"
+        method: GET
+        status_code: 200
+        timeout: 5
+      register: prom
+      ignore_errors: yes
+
+    - name: Print Prometheus status
+      debug:
+        msg: "Prometheus: {{ 'UP' if prom.status == 200 else 'DOWN' }}"
+
+    - name: Check Grafana
+      uri:
+        url: "http://localhost:3000/api/health"
+        method: GET
+        status_code: 200
+        timeout: 5
+      register: graf
+      ignore_errors: yes
+
+    - name: Print Grafana status
+      debug:
+        msg: "Grafana: {{ 'UP' if graf.status == 200 else 'DOWN' }}"
+
+    - name: Deployment summary
+      debug:
+        msg:
+          - "======= DEPLOYMENT SUMMARY ======="
+          - "Docker:         {{ docker_check.stdout }}"
+          - "Docker Compose: {{ compose_check.stdout }}"
+          - "=================================="

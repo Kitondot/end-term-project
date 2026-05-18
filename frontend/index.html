@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Microservices Shop</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+        .navbar { background: #2c3e50; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h1 { font-size: 22px; }
+        .nav-links button { background: #3498db; color: white; border: none; padding: 8px 15px; margin-left: 10px; border-radius: 5px; cursor: pointer; }
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .section { background: white; border-radius: 10px; padding: 25px; margin-bottom: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section h2 { color: #2c3e50; margin-bottom: 20px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+        .btn { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 14px; margin: 5px; }
+        .btn:hover { background: #2980b9; }
+        .btn-success { background: #27ae60; }
+        .btn-danger { background: #e74c3c; }
+        .alert { padding: 12px; border-radius: 5px; margin: 10px 0; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        .status-card { border-radius: 8px; padding: 15px; text-align: center; color: white; font-size: 14px; }
+        .status-ok { background: #27ae60; }
+        .status-error { background: #e74c3c; }
+        .status-loading { background: #95a5a6; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-top: 20px; }
+        .product-card { border: 1px solid #ddd; border-radius: 8px; padding: 15px; text-align: center; }
+        .product-card h3 { color: #2c3e50; margin-bottom: 10px; }
+        .price { color: #27ae60; font-size: 20px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: bold; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; border: none; background: #ecf0f1; border-radius: 5px; cursor: pointer; }
+        .tab.active { background: #3498db; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <h1>🛒 Microservices Shop</h1>
+    <div class="nav-links">
+        <span id="user-info" style="color:#ecf0f1; margin-right:15px;"></span>
+        <button onclick="checkAllHealth()">Check Health</button>
+        <button onclick="logout()" style="background:#e74c3c;">Logout</button>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- Health Status -->
+    <div class="section">
+        <h2>🔍 Service Health Status</h2>
+        <div class="status-grid">
+            <div class="status-card status-loading" id="status-auth">Auth Service<br>Loading...</div>
+            <div class="status-card status-loading" id="status-product">Product Service<br>Loading...</div>
+            <div class="status-card status-loading" id="status-order">Order Service<br>Loading...</div>
+            <div class="status-card status-loading" id="status-user">User Service<br>Loading...</div>
+            <div class="status-card status-loading" id="status-payment">Payment Service<br>Loading...</div>
+            <div class="status-card status-loading" id="status-notification">Notification Service<br>Loading...</div>
+        </div>
+    </div>
+
+    <!-- Auth -->
+    <div class="section">
+        <h2>🔐 Authentication</h2>
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('login-tab', this)">Login</button>
+            <button class="tab" onclick="showTab('register-tab', this)">Register</button>
+        </div>
+        <div id="login-tab" class="tab-content active">
+            <div class="form-group"><label>Username</label><input type="text" id="login-username" placeholder="Enter username"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="Enter password"></div>
+            <button class="btn btn-success" onclick="login()">Login</button>
+            <div id="auth-message"></div>
+        </div>
+        <div id="register-tab" class="tab-content">
+            <div class="form-group"><label>Username</label><input type="text" id="reg-username" placeholder="Enter username"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="reg-password" placeholder="Enter password"></div>
+            <button class="btn" onclick="register()">Register</button>
+            <div id="reg-message"></div>
+        </div>
+    </div>
+
+    <!-- Products -->
+    <div class="section">
+        <h2>📦 Products</h2>
+        <button class="btn" onclick="loadProducts()">Refresh Products</button>
+        <div id="products-grid" class="product-grid"></div>
+    </div>
+
+    <!-- Orders -->
+    <div class="section">
+        <h2>🛍️ Create Order</h2>
+        <div class="form-group"><label>User ID</label><input type="number" id="order-userid" value="1"></div>
+        <div class="form-group"><label>Product ID</label><input type="number" id="order-productid" value="1"></div>
+        <div class="form-group"><label>Quantity</label><input type="number" id="order-qty" value="1"></div>
+        <div class="form-group"><label>Total Price ($)</label><input type="number" id="order-price" value="29.99"></div>
+        <button class="btn btn-success" onclick="createOrder()">Place Order</button>
+        <button class="btn" onclick="loadOrders()">View All Orders</button>
+        <div id="order-message"></div>
+        <div id="orders-table"></div>
+    </div>
+
+    <!-- Payment -->
+    <div class="section">
+        <h2>💳 Payment</h2>
+        <div class="form-group"><label>Order ID</label><input type="number" id="pay-orderid" value="1"></div>
+        <div class="form-group"><label>Amount ($)</label><input type="number" id="pay-amount" value="29.99"></div>
+        <div class="form-group"><label>Method</label><input type="text" id="pay-method" value="card"></div>
+        <button class="btn btn-success" onclick="createPayment()">Pay Now</button>
+        <div id="payment-message"></div>
+    </div>
+
+    <!-- Notification -->
+    <div class="section">
+        <h2>🔔 Send Notification</h2>
+        <div class="form-group"><label>Recipient</label><input type="text" id="notif-recipient" placeholder="username"></div>
+        <div class="form-group"><label>Message</label><input type="text" id="notif-message" placeholder="Your message"></div>
+        <button class="btn" onclick="sendNotification()">Send</button>
+        <div id="notif-message-result"></div>
+    </div>
+
+</div>
+
+<script>
+    const API = {
+        auth:         'http://localhost:8001',
+        product:      'http://localhost:8002',
+        order:        'http://localhost:8003',
+        user:         'http://localhost:8004',
+        payment:      'http://localhost:8006',
+        notification: 'http://localhost:8007'
+    };
+
+    let token = localStorage.getItem('token');
+
+    function showTab(tabId, btn) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    async function checkHealth(service, elementId) {
+        const el = document.getElementById(elementId);
+        try {
+            const r = await fetch(`${API[service]}/health`, { signal: AbortSignal.timeout(3000) });
+            const data = await r.json();
+            el.className = r.ok ? 'status-card status-ok' : 'status-card status-error';
+            el.innerHTML = `${service.charAt(0).toUpperCase() + service.slice(1)} Service<br>✅ ${data.status}`;
+        } catch(e) {
+            el.className = 'status-card status-error';
+            el.innerHTML = `${service.charAt(0).toUpperCase() + service.slice(1)} Service<br>❌ DOWN`;
+        }
+    }
+
+    function checkAllHealth() {
+        ['auth', 'product', 'order', 'user', 'payment', 'notification']
+            .forEach(s => checkHealth(s, `status-${s}`));
+    }
+
+    async function register() {
+        const username = document.getElementById('reg-username').value;
+        const password = document.getElementById('reg-password').value;
+        const msg = document.getElementById('reg-message');
+        try {
+            const r = await fetch(`${API.auth}/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await r.json();
+            msg.innerHTML = r.ok
+                ? `<div class="alert alert-success">${data.message}</div>`
+                : `<div class="alert alert-error">${data.detail}</div>`;
+        } catch(e) {
+            msg.innerHTML = `<div class="alert alert-error">Connection failed</div>`;
+        }
+    }
+
+    async function login() {
+        const username = document.getElementById('login-username').value;
+        const password = document.getElementById('login-password').value;
+        const msg = document.getElementById('auth-message');
+        try {
+            const r = await fetch(`${API.auth}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await r.json();
+            if (r.ok) {
+                token = data.access_token;
+                localStorage.setItem('token', token);
+                document.getElementById('user-info').textContent = `👤 ${username}`;
+                msg.innerHTML = `<div class="alert alert-success">Login successful!</div>`;
+                loadProducts();
+            } else {
+                msg.innerHTML = `<div class="alert alert-error">${data.detail}</div>`;
+            }
+        } catch(e) {
+            msg.innerHTML = `<div class="alert alert-error">Connection failed</div>`;
+        }
+    }
+
+    function logout() {
+        token = null;
+        localStorage.removeItem('token');
+        document.getElementById('user-info').textContent = '';
+    }
+
+    async function loadProducts() {
+        const grid = document.getElementById('products-grid');
+        try {
+            const r = await fetch(`${API.product}/products`);
+            const products = await r.json();
+            grid.innerHTML = products.map(p => `
+                <div class="product-card">
+                    <h3>${p.name}</h3>
+                    <p style="color:#666; font-size:13px; margin:8px 0;">${p.description}</p>
+                    <div class="price">$${p.price.toFixed(2)}</div>
+                    <p style="font-size:12px; color:#888;">Stock: ${p.stock}</p>
+                    <button class="btn btn-success" style="margin-top:10px; width:100%;"
+                        onclick="document.getElementById('order-productid').value=${p.id};
+                                 document.getElementById('order-price').value=${p.price};
+                                 document.getElementById('pay-amount').value=${p.price}">
+                        Select
+                    </button>
+                </div>`).join('');
+        } catch(e) {
+            grid.innerHTML = '<p style="color:red;">Failed to load products</p>';
+        }
+    }
+
+    async function createOrder() {
+        const msg = document.getElementById('order-message');
+        const body = {
+            user_id:     parseInt(document.getElementById('order-userid').value),
+            product_id:  parseInt(document.getElementById('order-productid').value),
+            quantity:    parseInt(document.getElementById('order-qty').value),
+            total_price: parseFloat(document.getElementById('order-price').value)
+        };
+        try {
+            const r = await fetch(`${API.order}/orders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await r.json();
+            if (r.ok) {
+                msg.innerHTML = `<div class="alert alert-success">Order #${data.id} created! Status: ${data.status}</div>`;
+                document.getElementById('pay-orderid').value = data.id;
+            } else {
+                msg.innerHTML = `<div class="alert alert-error">Error: ${data.detail}</div>`;
+            }
+        } catch(e) {
+            msg.innerHTML = `<div class="alert alert-error">Order service unavailable</div>`;
+        }
+    }
+
+    async function loadOrders() {
+        const div = document.getElementById('orders-table');
+        try {
+            const r = await fetch(`${API.order}/orders`);
+            const orders = await r.json();
+            if (orders.length === 0) { div.innerHTML = '<p>No orders yet.</p>'; return; }
+            div.innerHTML = `
+                <table>
+                    <tr><th>ID</th><th>User</th><th>Product</th><th>Qty</th><th>Price</th><th>Status</th></tr>
+                    ${orders.map(o => `
+                        <tr>
+                            <td>${o.id}</td><td>${o.user_id}</td><td>${o.product_id}</td>
+                            <td>${o.quantity}</td><td>$${o.total_price}</td><td>${o.status}</td>
+                        </tr>`).join('')}
+                </table>`;
+        } catch(e) {
+            div.innerHTML = '<p style="color:red;">Order service down</p>';
+        }
+    }
+
+    async function createPayment() {
+        const msg = document.getElementById('payment-message');
+        const body = {
+            order_id: parseInt(document.getElementById('pay-orderid').value),
+            amount:   parseFloat(document.getElementById('pay-amount').value),
+            method:   document.getElementById('pay-method').value
+        };
+        try {
+            const r = await fetch(`${API.payment}/payments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await r.json();
+            if (r.ok) {
+                const color = data.status === 'completed' ? 'alert-success' : 'alert-error';
+                msg.innerHTML = `<div class="alert ${color}">Payment #${data.id} — ${data.status.toUpperCase()}</div>`;
+            } else {
+                msg.innerHTML = `<div class="alert alert-error">Payment failed</div>`;
+            }
+        } catch(e) {
+            msg.innerHTML = `<div class="alert alert-error">Payment service unavailable</div>`;
+        }
+    }
+
+    async function sendNotification() {
+        const msg = document.getElementById('notif-message-result');
+        const body = {
+            recipient: document.getElementById('notif-recipient').value,
+            type:      'email',
+            message:   document.getElementById('notif-message').value
+        };
+        try {
+            const r = await fetch(`${API.notification}/notifications`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await r.json();
+            msg.innerHTML = r.ok
+                ? `<div class="alert alert-success">Notification sent to ${data.recipient}</div>`
+                : `<div class="alert alert-error">Failed to send</div>`;
+        } catch(e) {
+            msg.innerHTML = `<div class="alert alert-error">Notification service unavailable</div>`;
+        }
+    }
+
+    window.onload = () => {
+        checkAllHealth();
+        loadProducts();
+        if (token) document.getElementById('user-info').textContent = '👤 Logged in';
+    };
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+docker_host = "npipe:////./pipe/docker_engine"
+network_name     = "tf-app-net"
+db_user          = "tfuser"
+db_password      = "tfpassword123"
+postgres_port    = 5433
+prometheus_port  = 9091
+grafana_port     = 3001
+grafana_user     = "admin"
+grafana_password = "grafana123" 
