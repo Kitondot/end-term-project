@@ -1,0 +1,29 @@
+groups:
+  - name: microservices_alerts
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is DOWN"
+          description: "Service {{ $labels.job }} has been down for more than 30 seconds"
+
+      - alert: HighErrorRate
+        expr: order_errors_total > 3
+        for: 10s
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate in Order Service"
+          description: "Order Service has more than 3 errors"
+
+      - alert: HighMemoryUsage
+        expr: container_memory_usage_bytes > 100000000
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Container memory usage exceeded 100MB"
